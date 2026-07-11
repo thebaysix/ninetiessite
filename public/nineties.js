@@ -116,8 +116,9 @@ function check() {
     solved = true;
     pw.classList.add("ok");
     // Correct password → through the modem to the secret page. Navigating away
-    // unloads this page, which stops the dial-up audio on its own.
-    window.location.href = "/secret1";
+    // unloads this page, which stops the dial-up audio on its own. Trailing
+    // slash matches the built route, avoiding a 308 redirect hop.
+    window.location.href = "/secret1/";
   }
 }
 
