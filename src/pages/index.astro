@@ -2,6 +2,7 @@
 // oh no, it's the nineties.
 // Full-screen shimmering B/W static, a looping dial-up handshake (public/
 // dialup.mp3), and a lone password box. Type "pikachu" and the screeching stops.
+import Marquee from "../components/Marquee.astro";
 const SITE_URL = "https://ohnoitsthenineties.lol";
 ---
 
@@ -21,6 +22,8 @@ const SITE_URL = "https://ohnoitsthenineties.lol";
     <meta property="og:url" content={SITE_URL} />
   </head>
   <body>
+    <Marquee />
+
     <canvas id="static" aria-hidden="true"></canvas>
 
     <audio id="dialup" src="/dialup.mp3" loop preload="auto"></audio>
