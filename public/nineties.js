@@ -62,13 +62,10 @@ requestAnimationFrame(loop);
 const dialup = document.getElementById("dialup");
 dialup.loop = true;
 dialup.volume = 0.7;
-let stopped = false;
-let fadeTimer = null;
 
 // play() returns a promise that rejects when autoplay is blocked. Wrap it so
 // callers can always .then()/.catch() regardless of browser.
 function tryPlay() {
-  if (stopped) return Promise.resolve();
   try {
     const p = dialup.play();
     return p && typeof p.then === "function" ? p : Promise.resolve();
@@ -77,15 +74,12 @@ function tryPlay() {
   }
 }
 
-// Try to start immediately; browsers block autoplay until a gesture, so also
-// arm listeners that kick the modem off on the first interaction. The password
-// box is focused on load, so the first keystroke doubles as that gesture.
+// Try to start immediately. Browsers block audible autoplay until a user
+// gesture (there is no way around this for first-time visitors), so also arm
+// listeners that kick the modem off on the very first interaction — the
+// focused password box means the first keystroke already counts.
 tryPlay().catch(() => {});
 function kickstart() {
-  if (stopped) {
-    removeKick();
-    return;
-  }
   if (!dialup.paused) {
     removeKick();
     return;
@@ -105,22 +99,6 @@ for (const ev of ["pointerdown", "keydown", "touchstart"]) {
   window.addEventListener(ev, kickstart, { passive: true });
 }
 
-function stopDialup() {
-  stopped = true;
-  removeKick();
-  // Quick fade so the connection doesn't cut off with a click.
-  if (fadeTimer === null) {
-    fadeTimer = window.setInterval(() => {
-      dialup.volume = Math.max(0, dialup.volume - 0.08);
-      if (dialup.volume <= 0.001) {
-        clearInterval(fadeTimer);
-        fadeTimer = null;
-        dialup.pause();
-      }
-    }, 30);
-  }
-}
-
 // ---- The gate --------------------------------------------------------------
 const pw = document.getElementById("pw");
 const form = document.getElementById("gate");
@@ -136,10 +114,10 @@ function check() {
   if (solved) return;
   if (pw.value.trim().toLowerCase() === "pikachu") {
     solved = true;
-    stopDialup();
     pw.classList.add("ok");
-    pw.blur();
-    showHint("…blessed silence. welcome to 1999.");
+    // Correct password → through the modem to the secret page. Navigating away
+    // unloads this page, which stops the dial-up audio on its own.
+    window.location.href = "/secret1";
   }
 }
 
