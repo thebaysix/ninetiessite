@@ -58,180 +58,43 @@ function loop(t) {
 }
 requestAnimationFrame(loop);
 
-// ---- Synthesized dial-up handshake, on loop --------------------------------
-let ac = null;
-let master = null;
-let noiseBuffer = null;
-let loopTimer = null;
+// ---- Dial-up handshake audio (looping mp3) ---------------------------------
+const dialup = document.getElementById("dialup");
+dialup.loop = true;
+dialup.volume = 0.7;
 let stopped = false;
+let fadeTimer = null;
 
-function makeNoise(context) {
-  const len = Math.floor(context.sampleRate * 2);
-  const b = context.createBuffer(1, len, context.sampleRate);
-  const ch = b.getChannelData(0);
-  for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
-  return b;
-}
-
-function tone(context, dest, freq, start, dur, gain, type) {
-  const osc = context.createOscillator();
-  const g = context.createGain();
-  osc.type = type || "sine";
-  osc.frequency.value = freq;
-  g.gain.setValueAtTime(0, start);
-  g.gain.linearRampToValueAtTime(gain, start + 0.01);
-  g.gain.setValueAtTime(gain, start + dur - 0.02);
-  g.gain.linearRampToValueAtTime(0, start + dur);
-  osc.connect(g).connect(dest);
-  osc.start(start);
-  osc.stop(start + dur + 0.02);
-}
-
-function screech(context, dest, start, dur, gain, centre, q) {
-  if (!noiseBuffer) return;
-  const src = context.createBufferSource();
-  src.buffer = noiseBuffer;
-  src.loop = true;
-  const bp = context.createBiquadFilter();
-  bp.type = "bandpass";
-  bp.frequency.value = centre;
-  bp.Q.value = q;
-  const g = context.createGain();
-  g.gain.setValueAtTime(0, start);
-  g.gain.linearRampToValueAtTime(gain, start + 0.05);
-  g.gain.setValueAtTime(gain, start + dur - 0.08);
-  g.gain.linearRampToValueAtTime(0, start + dur);
-  src.connect(bp).connect(g).connect(dest);
-  src.start(start);
-  src.stop(start + dur + 0.02);
-}
-
-// Schedule one full ~9s dial-up sequence starting at time `t0`.
-// Returns the total duration so the loop can re-arm itself.
-function scheduleSequence(context, dest, t0) {
-  let t = t0;
-
-  // 1) Dial tone — the North American 350 + 440 Hz pair.
-  tone(context, dest, 350, t, 1.1, 0.14);
-  tone(context, dest, 440, t, 1.1, 0.14);
-  t += 1.3;
-
-  // 2) Touch-tone dialing — a fistful of DTMF digits.
-  const dtmf = [
-    [697, 1209],
-    [770, 1336],
-    [852, 1477],
-    [697, 1477],
-    [941, 1336],
-    [852, 1209],
-    [770, 1477],
-  ];
-  for (const pair of dtmf) {
-    tone(context, dest, pair[0], t, 0.11, 0.15, "sine");
-    tone(context, dest, pair[1], t, 0.11, 0.15, "sine");
-    t += 0.17;
-  }
-  t += 0.35;
-
-  // 3) The answer tone — a steady ~2100 Hz carrier.
-  tone(context, dest, 2100, t, 0.9, 0.1);
-  t += 0.95;
-
-  // 4) The handshake: warbling carrier pairs over filtered noise.
-  const warbleStart = t;
-  const warbleDur = 3.6;
-  let w = warbleStart;
-  const pairs = [
-    [1200, 2400],
-    [1070, 1270],
-    [2225, 2025],
-    [1600, 2900],
-  ];
-  let pi = 0;
-  while (w < warbleStart + warbleDur) {
-    const pair = pairs[pi % pairs.length];
-    const seg = 0.09 + Math.random() * 0.06;
-    tone(context, dest, pair[0], w, seg, 0.09, "square");
-    tone(context, dest, pair[1], w, seg, 0.06, "sine");
-    w += seg;
-    pi++;
-  }
-  // Layered noise screeches sweeping through the handshake.
-  screech(context, dest, warbleStart, warbleDur, 0.09, 1800, 3);
-  screech(context, dest, warbleStart + 0.4, warbleDur - 0.4, 0.06, 3200, 6);
-  t = warbleStart + warbleDur;
-
-  // 5) Connection hiss settling out, then a beat of near-silence.
-  screech(context, dest, t, 1.1, 0.05, 1000, 1);
-  t += 1.1;
-  t += 0.5;
-
-  return t - t0;
-}
-
-function armLoop() {
-  if (!ac || !master || stopped) return;
-  const dur = scheduleSequence(ac, master, ac.currentTime + 0.06);
-  // Re-arm slightly before the sequence ends for a seamless loop.
-  loopTimer = window.setTimeout(armLoop, Math.max(50, (dur - 0.1) * 1000));
-}
-
-// Create the audio graph if needed, then (re)try to resume it. Autoplay is
-// blocked until a user gesture, so this is safe to call repeatedly: the loop
-// only actually arms once the context is genuinely running. (Calling this a
-// second time must still resume an already-created-but-suspended context —
-// that's the whole point of the gesture retry.)
-async function ensureRunning() {
-  if (stopped) return;
-  if (!ac) {
-    const Ctor = window.AudioContext || window.webkitAudioContext;
-    if (!Ctor) return;
-    ac = new Ctor();
-    master = ac.createGain();
-    master.gain.value = 0.5;
-    master.connect(ac.destination);
-    noiseBuffer = makeNoise(ac);
-  }
+// play() returns a promise that rejects when autoplay is blocked. Wrap it so
+// callers can always .then()/.catch() regardless of browser.
+function tryPlay() {
+  if (stopped) return Promise.resolve();
   try {
-    await ac.resume();
+    const p = dialup.play();
+    return p && typeof p.then === "function" ? p : Promise.resolve();
   } catch (e) {
-    /* ignored — will retry on the next gesture */
-  }
-  if (ac && ac.state === "running" && loopTimer === null && !stopped) {
-    armLoop();
-  }
-}
-
-function stopDialup() {
-  stopped = true;
-  if (loopTimer !== null) {
-    clearTimeout(loopTimer);
-    loopTimer = null;
-  }
-  if (ac && master) {
-    const now = ac.currentTime;
-    master.gain.cancelScheduledValues(now);
-    master.gain.setValueAtTime(master.gain.value, now);
-    master.gain.linearRampToValueAtTime(0, now + 0.25);
-    const toClose = ac;
-    window.setTimeout(() => toClose.close().catch(() => {}), 400);
-    ac = null;
-    master = null;
+    return Promise.reject(e);
   }
 }
 
 // Try to start immediately; browsers block autoplay until a gesture, so also
 // arm listeners that kick the modem off on the first interaction. The password
 // box is focused on load, so the first keystroke doubles as that gesture.
-ensureRunning();
+tryPlay().catch(() => {});
 function kickstart() {
   if (stopped) {
     removeKick();
     return;
   }
-  ensureRunning().then(() => {
-    if (!ac || ac.state === "running") removeKick();
-  });
+  if (!dialup.paused) {
+    removeKick();
+    return;
+  }
+  tryPlay()
+    .then(() => {
+      if (!dialup.paused) removeKick();
+    })
+    .catch(() => {});
 }
 function removeKick() {
   for (const ev of ["pointerdown", "keydown", "touchstart"]) {
@@ -240,6 +103,22 @@ function removeKick() {
 }
 for (const ev of ["pointerdown", "keydown", "touchstart"]) {
   window.addEventListener(ev, kickstart, { passive: true });
+}
+
+function stopDialup() {
+  stopped = true;
+  removeKick();
+  // Quick fade so the connection doesn't cut off with a click.
+  if (fadeTimer === null) {
+    fadeTimer = window.setInterval(() => {
+      dialup.volume = Math.max(0, dialup.volume - 0.08);
+      if (dialup.volume <= 0.001) {
+        clearInterval(fadeTimer);
+        fadeTimer = null;
+        dialup.pause();
+      }
+    }, 30);
+  }
 }
 
 // ---- The gate --------------------------------------------------------------

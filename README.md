@@ -16,10 +16,10 @@ Astro → Cloudflare Pages), same strict security headers, same `thebaysix` /
 - **Astro** static output, Node 22 (see `.nvmrc`).
 - The whole experience is one page (`src/pages/index.astro`) plus one static,
   same-origin client script (`public/nineties.js`).
-- **No binary assets.** The dial-up sound is synthesized live with the Web Audio
-  API (dial tone → DTMF digits → answer tone → warbling handshake over filtered
-  noise), and the static is generated per-frame on a `<canvas>`. This keeps the
-  page tiny and lets it satisfy the strict CSP with no `media-src` or inline JS.
+- The dial-up sound is `public/dialup.mp3`, played on native `loop` via an
+  `<audio>` element. The static is generated per-frame on a `<canvas>`. Both the
+  script and the audio are same-origin, so the strict CSP (`script-src 'self'`,
+  `media-src 'self'`) holds with no inline JS.
 
 ## Commands
 

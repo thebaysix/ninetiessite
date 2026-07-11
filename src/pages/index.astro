@@ -1,8 +1,7 @@
 ---
 // oh no, it's the nineties.
-// Full-screen shimmering B/W static, a looping dial-up handshake (synthesized
-// with the Web Audio API — no binary asset, CSP-clean), and a lone password
-// box. Type "pikachu" and the screeching stops.
+// Full-screen shimmering B/W static, a looping dial-up handshake (public/
+// dialup.mp3), and a lone password box. Type "pikachu" and the screeching stops.
 const SITE_URL = "https://ohnoitsthenineties.lol";
 ---
 
@@ -23,6 +22,8 @@ const SITE_URL = "https://ohnoitsthenineties.lol";
   </head>
   <body>
     <canvas id="static" aria-hidden="true"></canvas>
+
+    <audio id="dialup" src="/dialup.mp3" loop preload="auto"></audio>
 
     <main id="panel">
       <form id="gate" autocomplete="off" novalidate>
