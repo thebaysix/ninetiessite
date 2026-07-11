@@ -176,21 +176,30 @@ function armLoop() {
   loopTimer = window.setTimeout(armLoop, Math.max(50, (dur - 0.1) * 1000));
 }
 
-async function startDialup() {
-  if (ac || stopped) return;
-  const Ctor = window.AudioContext || window.webkitAudioContext;
-  if (!Ctor) return;
-  ac = new Ctor();
-  master = ac.createGain();
-  master.gain.value = 0.5;
-  master.connect(ac.destination);
-  noiseBuffer = makeNoise(ac);
+// Create the audio graph if needed, then (re)try to resume it. Autoplay is
+// blocked until a user gesture, so this is safe to call repeatedly: the loop
+// only actually arms once the context is genuinely running. (Calling this a
+// second time must still resume an already-created-but-suspended context —
+// that's the whole point of the gesture retry.)
+async function ensureRunning() {
+  if (stopped) return;
+  if (!ac) {
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return;
+    ac = new Ctor();
+    master = ac.createGain();
+    master.gain.value = 0.5;
+    master.connect(ac.destination);
+    noiseBuffer = makeNoise(ac);
+  }
   try {
     await ac.resume();
   } catch (e) {
     /* ignored — will retry on the next gesture */
   }
-  armLoop();
+  if (ac && ac.state === "running" && loopTimer === null && !stopped) {
+    armLoop();
+  }
 }
 
 function stopDialup() {
@@ -212,12 +221,16 @@ function stopDialup() {
 }
 
 // Try to start immediately; browsers block autoplay until a gesture, so also
-// arm a one-shot listener that kicks it off on first interaction.
-startDialup();
+// arm listeners that kick the modem off on the first interaction. The password
+// box is focused on load, so the first keystroke doubles as that gesture.
+ensureRunning();
 function kickstart() {
-  if (ac && ac.state === "running") return;
-  startDialup().then(() => {
-    if (ac && ac.state === "running") removeKick();
+  if (stopped) {
+    removeKick();
+    return;
+  }
+  ensureRunning().then(() => {
+    if (!ac || ac.state === "running") removeKick();
   });
 }
 function removeKick() {
