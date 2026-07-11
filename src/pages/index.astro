@@ -1,0 +1,141 @@
+---
+// oh no, it's the nineties.
+// Full-screen shimmering B/W static, a looping dial-up handshake (synthesized
+// with the Web Audio API — no binary asset, CSP-clean), and a lone password
+// box. Type "pikachu" and the screeching stops.
+const SITE_URL = "https://ohnoitsthenineties.lol";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={SITE_URL} />
+    <meta name="generator" content={Astro.generator} />
+    <title>oh no, it's the nineties</title>
+    <meta name="description" content="oh no, it's the nineties" />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="oh no, it's the nineties" />
+    <meta property="og:url" content={SITE_URL} />
+  </head>
+  <body>
+    <canvas id="static" aria-hidden="true"></canvas>
+
+    <main id="panel">
+      <form id="gate" autocomplete="off" novalidate>
+        <label class="visually-hidden" for="pw">Password</label>
+        <input
+          id="pw"
+          name="pw"
+          type="password"
+          inputmode="text"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          aria-label="Password"
+        />
+      </form>
+    </main>
+
+    <p id="hint" role="status" aria-live="polite"></p>
+
+    <style is:global>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+      }
+      #static {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        image-rendering: pixelated;
+        z-index: 0;
+      }
+      #panel {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        z-index: 1;
+      }
+      #gate {
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        box-shadow: 0 0 24px rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(1px);
+      }
+      #pw {
+        width: min(72vw, 300px);
+        padding: 12px 14px;
+        font: 18px/1.2 ui-monospace, "Cascadia Code", "SF Mono", Menlo,
+          Consolas, monospace;
+        letter-spacing: 0.25em;
+        color: #f2f2f2;
+        background: #0a0a0a;
+        border: 1px solid #555;
+        outline: none;
+        caret-color: #f2f2f2;
+      }
+      #pw:focus {
+        border-color: #ccc;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
+      }
+      #pw.ok {
+        border-color: #7fff9a;
+        box-shadow: 0 0 0 2px rgba(127, 255, 154, 0.25);
+      }
+      #hint {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 6vh;
+        margin: 0;
+        text-align: center;
+        z-index: 1;
+        font: 13px/1.4 ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+        letter-spacing: 0.15em;
+        color: rgba(240, 240, 240, 0.85);
+        text-shadow: 0 0 6px #000;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+      #hint.show {
+        opacity: 1;
+      }
+      .visually-hidden {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        /* Static is throttled in JS; nothing to freeze here. */
+      }
+    </style>
+
+    <!-- Client script is a static same-origin file (public/nineties.js) so it
+         satisfies the strict CSP (script-src 'self') with no inline code. -->
+    <script type="module" src="/nineties.js" is:inline></script>
+  </body>
+</html>
