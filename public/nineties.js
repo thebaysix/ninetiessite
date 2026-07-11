@@ -74,29 +74,30 @@ function tryPlay() {
   }
 }
 
-// Try to start immediately. Browsers block audible autoplay until a user
-// gesture (there is no way around this for first-time visitors), so also arm
-// listeners that kick the modem off on the very first interaction — the
-// focused password box means the first keystroke already counts.
-tryPlay().catch(() => {});
-function kickstart() {
-  if (!dialup.paused) {
-    removeKick();
-    return;
-  }
-  tryPlay()
-    .then(() => {
-      if (!dialup.paused) removeKick();
-    })
-    .catch(() => {});
-}
-function removeKick() {
+// Browsers block audible autoplay until a user gesture (no way around this for
+// first-time visitors), so a full-screen "click to dial in" splash makes that
+// first interaction part of the experience: the click starts the modem and
+// reveals the page.
+const splash = document.getElementById("splash");
+let connected = false;
+function connect() {
+  if (connected) return;
+  connected = true;
+  tryPlay().catch(() => {});
+  splash.classList.add("gone");
+  window.setTimeout(() => splash.remove(), 600);
+  // Focus after the triggering click has fully resolved, so its default focus
+  // handling doesn't steal it back — lets the visitor type straight away.
+  window.setTimeout(() => {
+    const pwEl = document.getElementById("pw");
+    if (pwEl) pwEl.focus();
+  }, 0);
   for (const ev of ["pointerdown", "keydown", "touchstart"]) {
-    window.removeEventListener(ev, kickstart);
+    window.removeEventListener(ev, connect);
   }
 }
 for (const ev of ["pointerdown", "keydown", "touchstart"]) {
-  window.addEventListener(ev, kickstart, { passive: true });
+  window.addEventListener(ev, connect, { passive: true });
 }
 
 // ---- The gate --------------------------------------------------------------
@@ -128,10 +129,8 @@ form.addEventListener("submit", (e) => {
   check();
 });
 
-// Give first-time visitors a nudge once things are noisy.
+// Give first-time visitors a nudge once things are noisy. (The password box is
+// focused by connect() when the splash is dismissed, so no load-time focus.)
 window.setTimeout(() => {
   if (!solved) showHint("(the password is a pokémon)");
 }, 6000);
-
-// Focus the box so people can just start typing.
-window.addEventListener("load", () => pw.focus());

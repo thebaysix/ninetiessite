@@ -43,6 +43,13 @@ const SITE_URL = "https://ohnoitsthenineties.lol";
 
     <p id="hint" role="status" aria-live="polite"></p>
 
+    <div id="splash">
+      <div class="splash-inner">
+        <p class="splash-cta">&gt;&gt; CLICK ANYWHERE TO DIAL IN &lt;&lt;</p>
+        <p class="splash-sub">( 56k modem ready )</p>
+      </div>
+    </div>
+
     <style is:global>
       :root {
         color-scheme: dark;
@@ -119,6 +126,43 @@ const SITE_URL = "https://ohnoitsthenineties.lol";
       #hint.show {
         opacity: 1;
       }
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        display: grid;
+        place-items: center;
+        background: #000;
+        cursor: pointer;
+        transition: opacity 0.5s ease;
+      }
+      #splash.gone {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .splash-inner {
+        text-align: center;
+        padding: var(--space-m, 1.5rem);
+      }
+      .splash-cta {
+        margin: 0;
+        font: 20px/1.4 ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+        letter-spacing: 0.2em;
+        color: #f2f2f2;
+        text-shadow: 0 0 8px rgba(240, 240, 240, 0.35);
+        animation: splash-blink 1.1s steps(2, start) infinite;
+      }
+      .splash-sub {
+        margin: 14px 0 0;
+        font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace;
+        letter-spacing: 0.25em;
+        color: rgba(240, 240, 240, 0.6);
+      }
+      @keyframes splash-blink {
+        50% {
+          opacity: 0.4;
+        }
+      }
       .visually-hidden {
         position: absolute;
         width: 1px;
@@ -131,7 +175,10 @@ const SITE_URL = "https://ohnoitsthenineties.lol";
         border: 0;
       }
       @media (prefers-reduced-motion: reduce) {
-        /* Static is throttled in JS; nothing to freeze here. */
+        /* Static is throttled in JS; just calm the splash blink. */
+        .splash-cta {
+          animation: none;
+        }
       }
     </style>
 
