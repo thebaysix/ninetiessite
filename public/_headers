@@ -7,3 +7,10 @@
   Permissions-Policy: geolocation=(), microphone=(), camera=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; form-action 'self'
+
+# Client scripts change without a hashed filename, so always revalidate them
+# (prevents stale JS being served from browser/edge cache after a deploy).
+/nineties.js
+  Cache-Control: no-cache
+/secret1.js
+  Cache-Control: no-cache
