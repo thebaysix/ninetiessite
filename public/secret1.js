@@ -367,8 +367,9 @@ function openShutdownDialog() {
 function shutDown() {
   const ov = document.createElement("div");
   ov.className = "shutdown";
-  ov.innerHTML = `<div><p>It's now safe to turn off<br>your computer.</p><p class="small">(click to reboot)</p></div>`;
-  ov.addEventListener("click", () => location.reload());
+  ov.innerHTML = `<div><p>It's now safe to turn off<br>your computer.</p><p class="small">(click to return)</p></div>`;
+  // Just dismiss the overlay — no reload, so the countdown keeps its place.
+  ov.addEventListener("click", () => ov.remove());
   document.body.appendChild(ov);
 }
 
