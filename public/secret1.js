@@ -8,6 +8,8 @@
 // Hidden test shortcut: Ctrl+Shift+M — or click the 16px transparent box in the
 // bottom-right corner (#skip) — jumps straight to midnight.
 
+import { initMinesweeper } from "/minesweeper.js";
+
 const START = new Date(1999, 11, 31, 23, 50, 0).getTime(); // 11:50:00 PM 12/31/1999
 const MIDNIGHT = new Date(2000, 0, 1, 0, 0, 0).getTime(); //  12:00:00 AM 01/01/2000
 const DURATION = MIDNIGHT - START; // 10 minutes of real time
@@ -320,6 +322,10 @@ function openApp(app) {
       });
     });
   else if (app === "internet") openWindow("internet", "🌐 The Internet — Netscape", internetHTML(), 340);
+  else if (app === "mines")
+    openWindow("mines", "💣 Minesweeper", `<div class="mines"></div>`, 380, (win) => {
+      initMinesweeper(win.querySelector(".mines"));
+    });
   else if (app === "doom")
     openWindow("doom", "👹 DOOM.EXE", doomHTML(), 300, (win) => {
       win.querySelector("#doomplay").addEventListener("click", () => {
