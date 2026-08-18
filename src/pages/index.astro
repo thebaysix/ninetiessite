@@ -44,8 +44,6 @@ const SITE_URL = "https://ohnoitsthenineties.lol";
       </form>
     </main>
 
-    <p id="hint" role="status" aria-live="polite"></p>
-
     <div id="splash">
       <div class="splash-inner">
         <p class="splash-cta">&gt;&gt; CLICK ANYWHERE TO DIAL IN &lt;&lt;</p>
@@ -109,25 +107,6 @@ const SITE_URL = "https://ohnoitsthenineties.lol";
       #pw.ok {
         border-color: #7fff9a;
         box-shadow: 0 0 0 2px rgba(127, 255, 154, 0.25);
-      }
-      #hint {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 6vh;
-        margin: 0;
-        text-align: center;
-        z-index: 1;
-        font: 13px/1.4 ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
-        letter-spacing: 0.15em;
-        color: rgba(240, 240, 240, 0.85);
-        text-shadow: 0 0 6px #000;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.4s ease;
-      }
-      #hint.show {
-        opacity: 1;
       }
       #splash {
         position: fixed;

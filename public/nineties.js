@@ -103,13 +103,7 @@ for (const ev of ["pointerdown", "keydown", "touchstart"]) {
 // ---- The gate --------------------------------------------------------------
 const pw = document.getElementById("pw");
 const form = document.getElementById("gate");
-const hint = document.getElementById("hint");
 let solved = false;
-
-function showHint(text) {
-  hint.textContent = text;
-  hint.classList.add("show");
-}
 
 function check() {
   if (solved) return;
@@ -128,9 +122,3 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   check();
 });
-
-// Give first-time visitors a nudge once things are noisy. (The password box is
-// focused by connect() when the splash is dismissed, so no load-time focus.)
-window.setTimeout(() => {
-  if (!solved) showHint("(the password is a pokémon)");
-}, 6000);
