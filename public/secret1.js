@@ -118,20 +118,346 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+// ================= DESKTOP APPS =================
+// The icons and Start menu open real (draggable, closable) Win98 windows. When
+// Y2K has hit (broken), the layer glitches and each window melts shortly after
+// it opens — so everything you open is subject to the breakdown too.
+
+const openWindows = {}; // key -> element (also prevents duplicates)
+let topZ = 500;
+
+function getAppsLayer() {
+  let apps = document.getElementById("apps");
+  if (!apps) {
+    apps = document.createElement("div");
+    apps.id = "apps";
+    document.body.appendChild(apps);
+    if (broken && !reduceMotion) apps.classList.add("glitch");
+  }
+  return apps;
+}
+
+function focusWin(win) {
+  win.style.zIndex = ++topZ;
+}
+
+function closeWin(key) {
+  const w = openWindows[key];
+  if (w) {
+    w.remove();
+    delete openWindows[key];
+  }
+}
+
+function makeDraggable(win) {
+  const bar = win.querySelector(".win__title");
+  bar.style.cursor = "move";
+  bar.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".win__btns")) return; // don't drag from the buttons
+    focusWin(win);
+    const r = win.getBoundingClientRect();
+    const dx = e.clientX - r.left;
+    const dy = e.clientY - r.top;
+    const move = (ev) => {
+      win.style.left = ev.clientX - dx + "px";
+      win.style.top = ev.clientY - dy + "px";
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    e.preventDefault();
+  });
+}
+
+// onCreate runs only when the window is first opened (not when re-focused), so
+// per-window listeners are wired exactly once.
+function openWindow(key, title, bodyHTML, width, onCreate) {
+  if (openWindows[key]) {
+    focusWin(openWindows[key]);
+    return openWindows[key];
+  }
+  const apps = getAppsLayer();
+  const win = document.createElement("div");
+  win.className = "win appwin";
+  const w = width || 300;
+  const n = Object.keys(openWindows).length;
+  win.style.width = w + "px";
+  win.style.left = Math.max(8, Math.min(window.innerWidth - w - 16, 130 + n * 26)) + "px";
+  win.style.top = 66 + n * 24 + "px";
+  win.style.zIndex = ++topZ;
+  win.innerHTML =
+    `<div class="win__title"><span>${title}</span>` +
+    `<span class="win__btns"><b class="win__close">✕</b></span></div>` +
+    `<div class="win__body">${bodyHTML}</div>`;
+  apps.appendChild(win);
+  openWindows[key] = win;
+
+  win.addEventListener("pointerdown", () => focusWin(win));
+  win.querySelector(".win__close").addEventListener("click", (e) => {
+    e.stopPropagation();
+    closeWin(key);
+  });
+  makeDraggable(win);
+  if (typeof onCreate === "function") onCreate(win);
+
+  // Subject to the breakdown: if Y2K already happened, this window melts too.
+  if (broken && !reduceMotion) setTimeout(() => win.classList.add("melt"), 1200);
+  return win;
+}
+
+// A one-off Win98 error dialog (distinct from the breeding breakdown dialogs).
+function errorBox(title, message, icon) {
+  const d = document.createElement("div");
+  d.className = "dialog";
+  d.style.left = Math.max(20, (window.innerWidth - 300) / 2 + (Math.random() * 80 - 40)) + "px";
+  d.style.top = Math.max(60, (window.innerHeight - 160) / 2 + (Math.random() * 80 - 40)) + "px";
+  d.style.zIndex = 1500;
+  d.innerHTML =
+    `<div class="dialog__title"><span>${title}</span><span class="dialog__x">✕</span></div>` +
+    `<div class="dialog__body"><span class="dialog__icon">${icon || "❌"}</span><p>${message}</p></div>` +
+    `<div class="dialog__foot"><button class="w95btn" type="button">OK</button></div>`;
+  document.body.appendChild(d);
+  const close = () => d.remove();
+  d.querySelector(".dialog__x").addEventListener("click", close);
+  d.querySelector(".w95btn").addEventListener("click", close);
+}
+
+// ---- app content -----------------------------------------------------------
+function computerHTML() {
+  return (
+    `<div class="drive"><span>🖥️</span><div><b>(C:) BOOT</b><br><small>2000 MB — Y2K status: <span style="color:#b00000">NON-COMPLIANT</span></small></div></div>` +
+    `<div class="drive"><span>💾</span><div><b>(A:) 3½ Floppy</b><br><small>1.44 MB</small></div></div>` +
+    `<div class="drive"><span>💿</span><div><b>(D:) CD-ROM</b><br><small>Encarta '95</small></div></div>` +
+    `<div class="drive"><span>🖨️</span><div><b>Printers</b><br><small>0 ready, 1 on fire</small></div></div>` +
+    `<p class="small">4 object(s)</p>`
+  );
+}
+function recycleHTML() {
+  return (
+    `<p class="small" id="binlist">Contents: the 1990s, homework.doc, Clippy, your free time.</p>` +
+    `<button class="w95btn" id="emptybin" type="button">Empty Recycle Bin</button>`
+  );
+}
+function internetHTML() {
+  if (broken) {
+    return (
+      `<div><div class="browser__bar">🌐 http://www.geocities.com/Y2Kbunker/</div>` +
+      `<div class="browser__page"><p style="color:#b00000"><b>CONNECTION LOST</b></p>` +
+      `<p class="small">The Internet ended in 1999.</p></div></div>`
+    );
+  }
+  return (
+    `<div><div class="browser__bar">🌐 http://www.geocities.com/Y2Kbunker/</div>` +
+    `<div class="browser__page"><div class="throbber">🌐</div>` +
+    `<p><b>Welcome to the World Wide Web!</b></p>` +
+    `<p class="small">Connected at 56,000 bps</p>` +
+    `<p class="blink">?? sign my guestbook ??</p></div></div>`
+  );
+}
+function doomHTML() {
+  return (
+    `<div class="doom"><p class="doom__logo">DOOM</p><p>E1M1: HANGAR</p>` +
+    `<p class="doom__hud">AMMO 50 · HEALTH 100% · ARMOR 0%</p>` +
+    `<button class="w95btn" id="doomplay" type="button">GET PSYCHED!</button>` +
+    `<p id="doommsg" class="doom__msg"></p></div>`
+  );
+}
+function documentsHTML() {
+  return (
+    `<p class="small">📄 resume_FINAL_final_v2.doc<br>📄 homework.txt<br>` +
+    `📄 secret_diary_DO_NOT_OPEN.txt<br>📁 napster_downloads\\</p>`
+  );
+}
+function settingsHTML() {
+  return (
+    `<p class="small">Control Panel</p>` +
+    `<div class="drive"><span>🕐</span><div><b>Date/Time</b><br><small>System date: 12/31/1999 — do NOT advance</small></div></div>` +
+    `<div class="drive"><span>🔊</span><div><b>Sounds</b><br><small>dialup.wav</small></div></div>` +
+    `<div class="drive"><span>🖥️</span><div><b>Display</b><br><small>640×480, 16 colors</small></div></div>`
+  );
+}
+function findHTML() {
+  return (
+    `<p>Named: <b>the future</b></p><p class="small">Look in: (C:)</p>` +
+    `<p style="color:#b00000">Search complete. 0 file(s) found.<br>The future is not on this computer.</p>`
+  );
+}
+function helpHTML() {
+  return (
+    `<p><b>Troubleshooting Wizard</b></p>` +
+    `<p class="small">Have you tried turning it off and on again?</p>` +
+    `<p class="small">If the problem persists, it is now the year 1900.</p>`
+  );
+}
+function runHTML() {
+  return (
+    `<p class="small">Type the name of a program and Windows will pretend to open it.</p>` +
+    `<div class="runrow"><span>Open:</span><input class="runinput" id="runinput" type="text" spellcheck="false" /></div>` +
+    `<div class="runfoot"><button class="w95btn" id="runok" type="button">OK</button></div>`
+  );
+}
+function shutdownHTML() {
+  return (
+    `<p class="small">What do you want the computer to do?</p>` +
+    `<p class="sdopts"><b>◉ Shut down</b><br>○ Restart<br>○ Restart in MS-DOS mode</p>` +
+    `<div class="runfoot"><button class="w95btn" id="sdok" type="button">OK</button>` +
+    `<button class="w95btn" id="sdcancel" type="button">Cancel</button></div>`
+  );
+}
+
+// ---- openers ---------------------------------------------------------------
+function openApp(app) {
+  if (app === "computer") openWindow("computer", "🖥️ My Computer", computerHTML(), 320);
+  else if (app === "recycle")
+    openWindow("recycle", "🗑️ Recycle Bin", recycleHTML(), 300, (win) => {
+      win.querySelector("#emptybin").addEventListener("click", () => {
+        win.querySelector("#binlist").textContent = broken
+          ? "Cannot empty: 2000 item(s) restored themselves."
+          : "The Recycle Bin is now empty.";
+      });
+    });
+  else if (app === "internet") openWindow("internet", "🌐 The Internet — Netscape", internetHTML(), 340);
+  else if (app === "doom")
+    openWindow("doom", "👹 DOOM.EXE", doomHTML(), 300, (win) => {
+      win.querySelector("#doomplay").addEventListener("click", () => {
+        win.querySelector("#doommsg").textContent = broken
+          ? "THE DEMONS ESCAPED INTO 1900!"
+          : "RIP AND TEAR!";
+      });
+    });
+}
+
+function openRunDialog() {
+  openWindow("run", "🏃 Run", runHTML(), 340, (win) => {
+    const input = win.querySelector("#runinput");
+    const go = () => {
+      const raw = input.value.trim();
+      const v = raw.toLowerCase();
+      if (!v) return;
+      if (v === "y2k" || v === "y2k.exe" || v === "format c:") {
+        closeWin("run");
+        goMidnight(); // easter egg: run the apocalypse yourself
+        return;
+      }
+      errorBox(
+        "Run",
+        `Windows cannot find '${raw}'. Make sure you typed the name correctly, and then try again.`,
+        "❌"
+      );
+    };
+    win.querySelector("#runok").addEventListener("click", go);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    setTimeout(() => input.focus(), 0);
+  });
+}
+
+function openShutdownDialog() {
+  openWindow("shutdown", "⏻ Shut Down Windows", shutdownHTML(), 320, (win) => {
+    win.querySelector("#sdcancel").addEventListener("click", () => closeWin("shutdown"));
+    win.querySelector("#sdok").addEventListener("click", () => {
+      closeWin("shutdown");
+      shutDown();
+    });
+  });
+}
+
+function shutDown() {
+  const ov = document.createElement("div");
+  ov.className = "shutdown";
+  ov.innerHTML = `<div><p>It's now safe to turn off<br>your computer.</p><p class="small">(click to reboot)</p></div>`;
+  ov.addEventListener("click", () => location.reload());
+  document.body.appendChild(ov);
+}
+
+// ---- the Start menu --------------------------------------------------------
+const startBtn = document.querySelector(".start");
+let startMenu = null;
+
+function closeStart() {
+  if (startMenu) {
+    startMenu.remove();
+    startMenu = null;
+    startBtn.classList.remove("active");
+  }
+}
+
+function runStartCmd(cmd) {
+  switch (cmd) {
+    case "doom": openApp("doom"); break;
+    case "documents": openWindow("documents", "📄 My Documents", documentsHTML(), 300); break;
+    case "settings": openWindow("settings", "⚙️ Control Panel", settingsHTML(), 320); break;
+    case "find": openWindow("find", "🔍 Find: All Files", findHTML(), 320); break;
+    case "help": openWindow("help", "❓ Windows Help", helpHTML(), 300); break;
+    case "run": openRunDialog(); break;
+    case "shutdown": openShutdownDialog(); break;
+  }
+}
+
+startBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (startMenu) { closeStart(); return; }
+  startMenu = document.createElement("div");
+  startMenu.className = "startmenu";
+  startMenu.innerHTML =
+    `<div class="startmenu__side">Windows&nbsp;98</div>` +
+    `<div class="startmenu__items">` +
+    `<button class="startmenu__item" type="button" data-cmd="doom">📁&nbsp; Programs</button>` +
+    `<button class="startmenu__item" type="button" data-cmd="documents">📄&nbsp; Documents</button>` +
+    `<button class="startmenu__item" type="button" data-cmd="settings">⚙️&nbsp; Settings</button>` +
+    `<button class="startmenu__item" type="button" data-cmd="find">🔍&nbsp; Find</button>` +
+    `<button class="startmenu__item" type="button" data-cmd="help">❓&nbsp; Help</button>` +
+    `<hr>` +
+    `<button class="startmenu__item" type="button" data-cmd="run">🏃&nbsp; Run...</button>` +
+    `<button class="startmenu__item" type="button" data-cmd="shutdown">⏻&nbsp; Shut Down...</button>` +
+    `</div>`;
+  document.body.appendChild(startMenu);
+  startBtn.classList.add("active");
+  startMenu.querySelectorAll(".startmenu__item").forEach((it) =>
+    it.addEventListener("click", () => {
+      const cmd = it.dataset.cmd;
+      closeStart();
+      runStartCmd(cmd);
+    })
+  );
+});
+window.addEventListener("click", (e) => {
+  if (startMenu && !e.target.closest(".startmenu") && !e.target.closest(".start")) closeStart();
+});
+
+// ---- wire the desktop icons ------------------------------------------------
+document.querySelectorAll(".icon").forEach((ic) => {
+  const open = () => {
+    document.querySelectorAll(".icon").forEach((i) => i.classList.remove("sel"));
+    ic.classList.add("sel");
+    openApp(ic.dataset.app);
+  };
+  ic.addEventListener("click", open);
+  ic.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+  });
+});
+
 // ================= Y2K BREAKDOWN =================
 function triggerBreakdown() {
   if (broken) return;
   broken = true;
 
   meltEverything();
-  if (!reduceMotion) document.getElementById("desktop").classList.add("glitch");
+  if (!reduceMotion) {
+    document.getElementById("desktop").classList.add("glitch");
+    const apps = document.getElementById("apps");
+    if (apps) apps.classList.add("glitch"); // any already-open app windows glitch too
+  }
   startSolitaire();
   startDialogs();
 }
 
 // ---- melting images / windows ----------------------------------------------
 function meltEverything() {
-  const targets = document.querySelectorAll(".melt-target, .win--decor, .icon");
+  const targets = document.querySelectorAll(".melt-target, .win--decor, .icon, .appwin");
   targets.forEach((el, i) => {
     el.style.animationDelay = (i * 0.25).toFixed(2) + "s";
     el.classList.add("melt");
