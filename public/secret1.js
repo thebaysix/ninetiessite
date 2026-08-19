@@ -14,7 +14,7 @@ const START = new Date(1999, 11, 31, 23, 50, 0).getTime(); // 11:50:00 PM 12/31/
 const MIDNIGHT = new Date(2000, 0, 1, 0, 0, 0).getTime(); //  12:00:00 AM 01/01/2000
 const DURATION = MIDNIGHT - START; // 10 minutes of real time
 
-const NEXT_PASSWORD = "password"; // placeholder — TBD
+const NEXT_PASSWORD = "13133pencil8"; // matched case-insensitively
 
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -386,7 +386,7 @@ function shopLandingHTML() {
   );
 }
 // ---- D&D Character Creator -------------------------------------------------
-const DND_RACES = ["Human", "Elf", "Dwarf", "Halfling", "Half-Orc", "Gnome", "Half-Elf", "Tiefling", "Dragonborn"];
+const DND_RACES = ["Human", "Elf", "Dwarf", "Halfling", "Half-Orc", "Gnome", "Half-Elf", "Tiefling", "Dragonborn", "Carrot"];
 const DND_CLASSES = [
   { n: "Fighter", d: 10, e: "⚔️" }, { n: "Wizard", d: 6, e: "🧙" },
   { n: "Rogue", d: 8, e: "🗡️" }, { n: "Cleric", d: 8, e: "✨" },
@@ -394,6 +394,7 @@ const DND_CLASSES = [
   { n: "Barbarian", d: 12, e: "🪓" }, { n: "Paladin", d: 10, e: "🛡️" },
   { n: "Druid", d: 8, e: "🍃" }, { n: "Sorcerer", d: 6, e: "🔥" },
   { n: "Monk", d: 8, e: "👊" }, { n: "Warlock", d: 8, e: "😈" },
+  { n: "Freedom Fighter", d: 10, e: "✊" },
 ];
 const DND_ALIGN = [
   "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral",
@@ -440,7 +441,8 @@ function dndHTML() {
     `<div class="dnd__ctrls">` +
     `<button class="w95btn dnd__roll" type="button">⚄ ROLL ABILITY SCORES</button>` +
     `<button class="w95btn dnd__rndall" type="button">RANDOMIZE ALL</button></div>` +
-    `<p class="dnd__flavor"></p></div>`
+    `<p class="dnd__flavor"></p>` +
+    `<p class="dnd__secret" hidden>You attempt a rescue of ?? friends at Darkness's fridge. Roll a deception check.</p></div>`
   );
 }
 
@@ -453,6 +455,7 @@ function wireDnd(win) {
   const emojiEl = root.querySelector(".dnd__emoji");
   const hpEl = root.querySelector(".dnd__hp b");
   const flavorEl = root.querySelector(".dnd__flavor");
+  const secretEl = root.querySelector(".dnd__secret");
   const scores = {}; // ability -> score
 
   const pick = (a) => a[(Math.random() * a.length) | 0];
@@ -494,13 +497,27 @@ function wireDnd(win) {
   });
   root.querySelector(".dnd__rndall").addEventListener("click", () => {
     nameEl.value = pick(DND_NAMES) + " " + pick(DND_TITLES);
-    raceEl.value = pick(DND_RACES);
+    raceEl.value = pick(DND_RACES.filter((r) => r !== "Carrot")); // Carrot is a deliberate pick only
     classEl.selectedIndex = (Math.random() * DND_CLASSES.length) | 0;
     alignEl.value = pick(DND_ALIGN);
+    secretEl.hidden = true;
     rollAbilities();
   });
   classEl.addEventListener("change", () => { updatePortrait(); setFlavor(); });
-  raceEl.addEventListener("change", setFlavor);
+  raceEl.addEventListener("change", () => {
+    // Easter egg: choosing Carrot conscripts you into the Salad Liberation Front.
+    if (raceEl.value === "Carrot") {
+      nameEl.value = "Salad Liberation Front";
+      classEl.value = "Freedom Fighter";
+      alignEl.value = "Lawful Good";
+      secretEl.hidden = false;
+      rollAbilities(); // randomize the numbers (also refreshes portrait + flavor)
+    } else {
+      secretEl.hidden = true;
+      updatePortrait();
+      setFlavor();
+    }
+  });
   alignEl.addEventListener("change", setFlavor);
 
   updatePortrait();
