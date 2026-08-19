@@ -398,7 +398,7 @@ const DND_CLASSES = [
 ];
 const DND_ALIGN = [
   "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral",
-  "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil",
+  "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil", "Carrotic Good",
 ];
 const DND_ABILS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
 const DND_NAMES = [
@@ -466,15 +466,18 @@ function wireDnd(win) {
 
   function updatePortrait() {
     const ci = classInfo();
-    emojiEl.textContent = broken ? "💀" : ci.e;
+    emojiEl.textContent = broken ? "💀" : raceEl.value === "Carrot" ? "🥕" : ci.e;
     hpEl.textContent = scores.CON != null ? Math.max(1, ci.d + mod(scores.CON)) : "—";
   }
 
   function setFlavor() {
     const nm = nameEl.value.trim() || "This nameless wanderer";
-    flavorEl.textContent =
-      `${nm}: ${alignEl.value} ${raceEl.value} ${classEl.value}. ` +
-      (broken ? "The character sheet bursts into flames." : pick(DND_QUIPS));
+    const quip = broken
+      ? "The character sheet bursts into flames."
+      : raceEl.value === "Carrot"
+        ? "Can see in the dark!"
+        : pick(DND_QUIPS);
+    flavorEl.textContent = `${nm}: ${alignEl.value} ${raceEl.value} ${classEl.value}. ${quip}`;
   }
 
   function rollAbilities() {
@@ -499,7 +502,7 @@ function wireDnd(win) {
     nameEl.value = pick(DND_NAMES) + " " + pick(DND_TITLES);
     raceEl.value = pick(DND_RACES.filter((r) => r !== "Carrot")); // Carrot is a deliberate pick only
     classEl.selectedIndex = (Math.random() * DND_CLASSES.length) | 0;
-    alignEl.value = pick(DND_ALIGN);
+    alignEl.value = pick(DND_ALIGN.filter((a) => a !== "Carrotic Good"));
     secretEl.hidden = true;
     rollAbilities();
   });
@@ -509,7 +512,7 @@ function wireDnd(win) {
     if (raceEl.value === "Carrot") {
       nameEl.value = "Salad Liberation Front";
       classEl.value = "Freedom Fighter";
-      alignEl.value = "Lawful Good";
+      alignEl.value = "Carrotic Good";
       secretEl.hidden = false;
       rollAbilities(); // randomize the numbers (also refreshes portrait + flavor)
     } else {
