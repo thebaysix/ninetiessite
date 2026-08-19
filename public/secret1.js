@@ -82,28 +82,24 @@ function tick() {
 render();
 setInterval(tick, 200);
 
-// A foreboding (but not yet cursed) popup once every minute of the countdown.
-const FOREBODING = [
-  "System clock approaching 00:00:00…",
-  "Warning: date rollover in progress.",
-  "Have you backed up your files?",
-  "Checking Y2K compliance… please wait.",
-  "The year 2000 cannot be guaranteed.",
-  "Something is coming.",
-  "Tick… tock…",
-  "Your computer may not survive the transition.",
-  "The mainframe grows uneasy.",
-  "Please remain calm.",
-];
-const FOREBODING_TITLES = ["System Notice", "Warning", "Y2K Watch", "Reminder", "Notice"];
-const FOREBODING_ICONS = ["⚠️", "⏳", "🕰️", "📅", "💾"];
-let lastForebodeMin = new Date(START).getMinutes(); // 50 → first popup at 11:51
+// One deterministic Y2K reminder per minute of the countdown (11:51 → 11:59).
+const FOREBODING = {
+  51: "Have you backed up your files recently?",
+  52: "You have no chance to survive make your time",
+  53: "The year 2000 cannot be guaranteed",
+  54: "Something is coming",
+  55: "Tick… tock…",
+  56: "Your computer may not survive the transition",
+  57: "The mainframe grows uneasy",
+  58: "Please remain calm",
+  59: "Warning: date rollover imminent.",
+};
+let lastForebodeMin = new Date(START).getMinutes(); // 50 → first reminder at 11:51
 function maybeForebode(v) {
   const m = new Date(v).getMinutes();
   if (m === lastForebodeMin) return;
   lastForebodeMin = m;
-  const pick = (a) => a[(Math.random() * a.length) | 0];
-  errorBox(pick(FOREBODING_TITLES), pick(FOREBODING), pick(FOREBODING_ICONS));
+  if (FOREBODING[m]) errorBox("Y2K Watch", FOREBODING[m], "⚠️");
 }
 
 // Slow visitor-counter churn, for flavor.
