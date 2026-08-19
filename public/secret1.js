@@ -93,11 +93,11 @@ function check() {
     msg.classList.add("bad");
     return;
   }
-  // Beat the clock: freeze the countdown and hold. (Next stage TBD — point this
-  // at /secret2/ once it exists.)
+  // Beat the clock: freeze the countdown and celebrate.
   solved = true;
   pw.blur();
-  msg.textContent = "AUTHORIZATION ACCEPTED — Y2K BUG CONTAINED ✓";
+  msg.textContent = "";
+  showPrizeBanner();
 }
 
 pw.addEventListener("input", check);
@@ -243,20 +243,68 @@ function recycleHTML() {
     `<button class="w95btn" id="emptybin" type="button">Empty Recycle Bin</button>`
   );
 }
-function internetHTML() {
+// ---- The Internet: an addressable fake Netscape browser --------------------
+const HOME_URL = "http://www.geocities.com/Y2Kbunker/";
+const SHOP_URL = "http://www.y2kbugbusters.com";
+
+function browserChromeHTML() {
+  return (
+    `<div class="bnav">` +
+    `<button class="bnav__btn" type="button" data-bnav="back" title="Back">◀</button>` +
+    `<button class="bnav__btn" type="button" data-bnav="home" title="Home">🏠</button>` +
+    `<input class="bnav__url" type="text" spellcheck="false" value="${HOME_URL}">` +
+    `<button class="bnav__btn bnav__go" type="button" data-bnav="go">GO</button>` +
+    `</div><div class="browser__page"></div>`
+  );
+}
+
+function pageFor(url) {
   if (broken) {
     return (
-      `<div><div class="browser__bar">🌐 http://www.geocities.com/Y2Kbunker/</div>` +
-      `<div class="browser__page"><p style="color:#b00000"><b>CONNECTION LOST</b></p>` +
-      `<p class="small">The Internet ended in 1999.</p></div></div>`
+      `<p style="color:#b00000"><b>CONNECTION LOST</b></p>` +
+      `<p class="small">The Internet ended in 1999.</p>`
     );
   }
+  const norm = String(url).toLowerCase().trim()
+    .replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
+  if (norm.includes("y2kbugbusters")) return shopPageHTML();
+  if (norm === "" || norm.includes("geocities") || norm.includes("y2kbunker")) return homePageHTML();
   return (
-    `<div><div class="browser__bar">🌐 http://www.geocities.com/Y2Kbunker/</div>` +
-    `<div class="browser__page"><div class="throbber">🌐</div>` +
+    `<p style="color:#b00000"><b>404 — Page Not Found</b></p>` +
+    `<p class="small">The page “${esc(url)}” could not be found on the World Wide Web (all 12 pages of it).</p>`
+  );
+}
+
+function homePageHTML() {
+  return (
+    `<div class="throbber">🌐</div>` +
     `<p><b>Welcome to the World Wide Web!</b></p>` +
     `<p class="small">Connected at 56,000 bps</p>` +
-    `<p class="blink">?? sign my guestbook ??</p></div></div>`
+    `<p>⚠️ Worried about the <b>Y2K BUG</b>?<br>` +
+    `<a class="weblink blink" data-go="${SHOP_URL}">» Shop Y2K BugBusters «</a></p>` +
+    `<p><a class="weblink" data-gbook="1">?? sign my guestbook ??</a></p>`
+  );
+}
+
+function shopPageHTML() {
+  // Left→right: GREEN bug zapper, RED bug spray, YELLOW fly tape.
+  const item = (cls, emoji, title, price, bids, rating) =>
+    `<div class="listing">` +
+    `<div class="listing__img ${cls}">${emoji}</div>` +
+    `<div class="listing__title">${title}</div>` +
+    `<div class="listing__stars">${rating}</div>` +
+    `<div class="listing__price">$${price}</div>` +
+    `<div class="listing__bids">${bids} bids · ends in 00:0${bids % 9}</div>` +
+    `<button class="listing__buy w95btn" type="button" data-buy="1">Buy It Now</button>` +
+    `</div>`;
+  return (
+    `<div class="ebay">` +
+    `<div class="ebay__head">🛒 Y2K BugBusters — Millennium Bug Superstore</div>` +
+    `<div class="ebay__grid">` +
+    item("green", "⚡", "Y2K Bug Zapper 2000™", "19.99", 12, "★★★★½") +
+    item("red", "🧴", "MillenniuMist™ Bug Spray", "9.99", 7, "★★★★☆") +
+    item("yellow", "🎗️", "StickyByte™ Fly Tape", "4.99", 3, "★★★½☆") +
+    `</div></div>`
   );
 }
 function doomHTML() {
@@ -321,7 +369,34 @@ function openApp(app) {
           : "The Recycle Bin is now empty.";
       });
     });
-  else if (app === "internet") openWindow("internet", "🌐 The Internet — Netscape", internetHTML(), 340);
+  else if (app === "internet")
+    openWindow("internet", "🌐 The Internet — Netscape", browserChromeHTML(), 460, (win) => {
+      const urlInput = win.querySelector(".bnav__url");
+      const pageEl = win.querySelector(".browser__page");
+      const hist = [];
+      const wireLinks = () => {
+        pageEl.querySelectorAll("[data-go]").forEach((a) => a.addEventListener("click", () => go(a.dataset.go)));
+        pageEl.querySelectorAll("[data-gbook]").forEach((a) => a.addEventListener("click", openGuestbook));
+        pageEl.querySelectorAll("[data-buy]").forEach((btn) =>
+          btn.addEventListener("click", () =>
+            errorBox("Y2K BugBusters", "Order failed — your credit card expires 00/00/00.", "💳")
+          )
+        );
+      };
+      const go = (url, push) => {
+        if (push !== false) hist.push(url);
+        urlInput.value = url;
+        pageEl.innerHTML = pageFor(url);
+        wireLinks();
+      };
+      win.querySelector('[data-bnav="go"]').addEventListener("click", () => go(urlInput.value));
+      win.querySelector('[data-bnav="home"]').addEventListener("click", () => go(HOME_URL));
+      win.querySelector('[data-bnav="back"]').addEventListener("click", () => {
+        if (hist.length > 1) { hist.pop(); go(hist[hist.length - 1], false); }
+      });
+      urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") go(urlInput.value); });
+      go(HOME_URL);
+    });
   else if (app === "mines")
     openWindow("mines", "💣 Minesweeper", `<div class="mines"></div>`, 380, (win) => {
       initMinesweeper(win.querySelector(".mines"));
@@ -377,6 +452,80 @@ function shutDown() {
   // Just dismiss the overlay — no reload, so the countdown keeps its place.
   ov.addEventListener("click", () => ov.remove());
   document.body.appendChild(ov);
+}
+
+// ---- guestbook (opened from the decor window and the browser home page) -----
+const GBOOK_KEY = "y2k_guestbook";
+const GBOOK_SEED = [
+  { n: "webmaster", m: "Welcome 2 my site!!! Best viewed in Netscape Navigator @ 800x600.", d: "12/28/1999" },
+  { n: "Sk8erBoi97", m: "this site is da BOMB 💣 sign mine back!!", d: "12/30/1999" },
+  { n: "Y2K_Survivor", m: "stocked up on canned beans + bottled water. see u in the year 2000 (maybe)", d: "12/31/1999" },
+  { n: "xX_AOLkid_Xx", m: "a/s/l?? this page is kewl 8)", d: "12/31/1999" },
+];
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+function loadGbook() {
+  try { return JSON.parse(localStorage.getItem(GBOOK_KEY)) || []; } catch (e) { return []; }
+}
+function saveGbook(list) {
+  try { localStorage.setItem(GBOOK_KEY, JSON.stringify(list)); } catch (e) { /* private mode */ }
+}
+
+function openGuestbook() {
+  openWindow("guestbook", "📖 Guestbook", `<div class="gbook"></div>`, 360, (win) => {
+    const root = win.querySelector(".gbook");
+    const render = () => {
+      const all = loadGbook().concat(GBOOK_SEED); // newest (user) entries first
+      root.innerHTML =
+        `<p class="gbook__title">✍️ Sign My Guestbook!</p>` +
+        `<div class="gbook__list">` +
+        all
+          .map(
+            (e) =>
+              `<div class="gbook__entry"><div class="gbook__meta"><b>${esc(e.n)}</b>` +
+              `<span>${esc(e.d)}</span></div><div class="gbook__body">${esc(e.m)}</div></div>`
+          )
+          .join("") +
+        `</div>` +
+        `<form class="gbook__form">` +
+        `<input class="gbook__name" maxlength="24" spellcheck="false" placeholder="name / handle">` +
+        `<textarea class="gbook__in" maxlength="200" placeholder="leave a message!"></textarea>` +
+        `<button class="w95btn" type="submit">Sign It!</button></form>`;
+      root.querySelector(".gbook__form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const m = root.querySelector(".gbook__in").value.trim();
+        if (!m) return;
+        const n = root.querySelector(".gbook__name").value.trim() || "anonymous";
+        const list = loadGbook();
+        list.unshift({ n, m, d: "12/31/1999" });
+        saveGbook(list);
+        render();
+      });
+    };
+    render();
+  });
+}
+
+// ---- "you saved the millennium" prize banner (on correct password) ---------
+function showPrizeBanner() {
+  if (document.getElementById("prizeBanner")) return;
+  const el = document.createElement("div");
+  el.id = "prizeBanner";
+  el.className = "prize";
+  el.innerHTML =
+    `<div class="prize__box">` +
+    `<button class="prize__x" type="button" aria-label="Close">✕</button>` +
+    `<p class="prize__hd">🎆 YOU HAVE SAVED THE MILLENNIUM! 🎆</p>` +
+    `<button class="prize__claim" type="button">★ CLAIM PRIZE ★</button>` +
+    `<p class="prize__reveal"></p></div>`;
+  document.body.appendChild(el);
+  el.querySelector(".prize__x").addEventListener("click", () => el.remove());
+  el.querySelector(".prize__claim").addEventListener("click", (e) => {
+    e.currentTarget.style.display = "none";
+    el.querySelector(".prize__reveal").textContent = "🐦 BIRD IS THE WORD 🐦";
+  });
 }
 
 // ---- the Start menu --------------------------------------------------------
@@ -444,6 +593,14 @@ document.querySelectorAll(".icon").forEach((ic) => {
   ic.addEventListener("click", open);
   ic.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); }
+  });
+});
+
+// ---- wire the "sign my guestbook" link in the decor window -----------------
+document.querySelectorAll(".gbook-link").forEach((el) => {
+  el.addEventListener("click", openGuestbook);
+  el.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openGuestbook(); }
   });
 });
 
