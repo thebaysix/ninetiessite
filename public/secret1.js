@@ -332,10 +332,13 @@ const DND_TITLES = [
   "Stormborn", "the Cursed", "Lightbringer", "the Sly", "Ironfoot",
 ];
 const DND_QUIPS = [
-  "Rolled a natural 1 on Charisma.", "Definitely not overpowered.",
-  "Has never actually read the rulebook.", "Min-maxed to perfection.",
-  "Will die in the first encounter.", "Powered by Mountain Dew and Cheetos.",
-  "+3 to vibes.", "Chaotic, mostly.", "The DM already hates this one.",
+  "Rolled a natural 1 on Charisma",
+  "Has never actually read the rulebook",
+  "Min-maxed to perfection",
+  "Will die in the first encounter",
+  "Ready to counter your counterspell",
+  "A party of orc bards is an orchestra",
+  "Just like the role-player, but sexier",
 ];
 
 function dndHTML() {
@@ -389,7 +392,7 @@ function wireDnd(win) {
   function setFlavor() {
     const nm = nameEl.value.trim() || "This nameless wanderer";
     flavorEl.textContent =
-      `${nm} — ${alignEl.value} ${raceEl.value} ${classEl.value}. ` +
+      `${nm}: ${alignEl.value} ${raceEl.value} ${classEl.value}. ` +
       (broken ? "The character sheet bursts into flames." : pick(DND_QUIPS));
   }
 
