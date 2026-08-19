@@ -350,7 +350,7 @@ function dndHTML() {
     .join("");
   return (
     `<div class="dnd">` +
-    `<div class="dnd__hd">🐉 A.D.&amp;D. CHARACTER CREATOR v1.0</div>` +
+    `<div class="dnd__hd">🐉 DND CHARACTER CREATOR v1.0</div>` +
     `<div class="dnd__row"><label>Name</label>` +
     `<input class="dnd__name" maxlength="28" spellcheck="false" placeholder="(unnamed hero)">` +
     `<button class="w95btn dnd__rndname" type="button" title="Random name">🎲</button></div>` +
@@ -456,7 +456,7 @@ function helpHTML() {
 }
 function runHTML() {
   return (
-    `<p class="small">Type the name of a program and Windows will pretend to open it.</p>` +
+    `<p class="small">Type the name of a program to open it — try MINESWEEPER, DND, INTERNET, GUESTBOOK…</p>` +
     `<div class="runrow"><span>Open:</span><input class="runinput" id="runinput" type="text" spellcheck="false" /></div>` +
     `<div class="runfoot"><button class="w95btn" id="runok" type="button">OK</button></div>`
   );
@@ -514,7 +514,35 @@ function openApp(app) {
       initMinesweeper(win.querySelector(".mines"));
     });
   else if (app === "dnd")
-    openWindow("dnd", "🐉 D&D Creator", dndHTML(), 340, wireDnd);
+    openWindow("dnd", "🐉 DND Creator", dndHTML(), 340, wireDnd);
+}
+
+// Resolve a typed program name to an action. Returns true if it launched.
+function runProgram(raw) {
+  const v = raw.trim().toLowerCase().replace(/\.exe$/, "").replace(/\s+/g, " ");
+  if (v === "y2k" || v === "format c:" || v === "format") { goMidnight(); return true; }
+  if (v === "guestbook" || v === "gbook") { openGuestbook(); return true; }
+
+  // typed name -> desktop app (openApp), including real Win9x exe names
+  const apps = {
+    minesweeper: "mines", mines: "mines", winmine: "mines",
+    dnd: "dnd", "d&d": "dnd", "d&d creator": "dnd", chargen: "dnd", character: "dnd",
+    internet: "internet", iexplore: "internet", explorer: "internet",
+    netscape: "internet", www: "internet", web: "internet",
+    "my computer": "computer", computer: "computer",
+    "recycle bin": "recycle", recycle: "recycle",
+  };
+  if (apps[v]) { openApp(apps[v]); return true; }
+
+  // typed name -> Start-menu command
+  const cmds = {
+    documents: "documents", settings: "settings", control: "settings",
+    "control panel": "settings", find: "find", search: "find",
+    help: "help", winhelp: "help",
+  };
+  if (cmds[v]) { runStartCmd(cmds[v]); return true; }
+
+  return false;
 }
 
 function openRunDialog() {
@@ -522,13 +550,8 @@ function openRunDialog() {
     const input = win.querySelector("#runinput");
     const go = () => {
       const raw = input.value.trim();
-      const v = raw.toLowerCase();
-      if (!v) return;
-      if (v === "y2k" || v === "y2k.exe" || v === "format c:") {
-        closeWin("run");
-        goMidnight(); // easter egg: run the apocalypse yourself
-        return;
-      }
+      if (!raw) return;
+      if (runProgram(raw)) { closeWin("run"); return; }
       errorBox(
         "Run",
         `Windows cannot find '${raw}'. Make sure you typed the name correctly, and then try again.`,
