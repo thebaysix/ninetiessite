@@ -71,11 +71,40 @@ function render() {
 
 function tick() {
   if (solved) return;
-  if (virtualNow() >= MIDNIGHT && !broken) triggerBreakdown();
+  const v = virtualNow();
+  if (v >= MIDNIGHT) {
+    if (!broken) triggerBreakdown();
+  } else {
+    maybeForebode(v);
+  }
   render();
 }
 render();
 setInterval(tick, 200);
+
+// A foreboding (but not yet cursed) popup once every minute of the countdown.
+const FOREBODING = [
+  "System clock approaching 00:00:00…",
+  "Warning: date rollover in progress.",
+  "Have you backed up your files?",
+  "Checking Y2K compliance… please wait.",
+  "The year 2000 cannot be guaranteed.",
+  "Something is coming.",
+  "Tick… tock…",
+  "Your computer may not survive the transition.",
+  "The mainframe grows uneasy.",
+  "Please remain calm.",
+];
+const FOREBODING_TITLES = ["System Notice", "Warning", "Y2K Watch", "Reminder", "Notice"];
+const FOREBODING_ICONS = ["⚠️", "⏳", "🕰️", "📅", "💾"];
+let lastForebodeMin = new Date(START).getMinutes(); // 50 → first popup at 11:51
+function maybeForebode(v) {
+  const m = new Date(v).getMinutes();
+  if (m === lastForebodeMin) return;
+  lastForebodeMin = m;
+  const pick = (a) => a[(Math.random() * a.length) | 0];
+  errorBox(pick(FOREBODING_TITLES), pick(FOREBODING), pick(FOREBODING_ICONS));
+}
 
 // Slow visitor-counter churn, for flavor.
 setInterval(() => {
@@ -108,7 +137,30 @@ function check() {
   msg.textContent = "";
   msg.classList.remove("bad");
   pw.blur();
+  startAvertedBlink();
   showPrizeBanner();
+}
+
+// Once averted, the frozen clock blinks between its held time and "Y2K AVERTED".
+let avertedTimer = null;
+function startAvertedBlink() {
+  if (avertedTimer) return;
+  const frozenTime = clockTime.textContent;
+  const frozenDate = clockDate.textContent;
+  tminus.textContent = "✓ MILLENNIUM SECURED";
+  tminus.classList.remove("fail");
+  tminus.classList.add("ok");
+  if (reduceMotion) {
+    clockTime.textContent = "Y2K AVERTED";
+    clockDate.textContent = "— SAFE —";
+    return;
+  }
+  let on = true;
+  avertedTimer = setInterval(() => {
+    on = !on;
+    clockTime.textContent = on ? frozenTime : "Y2K AVERTED";
+    clockDate.textContent = on ? frozenDate : "— SAFE —";
+  }, 700);
 }
 
 // Only Submit (button or Enter) checks the password. Typing just clears any
