@@ -541,6 +541,16 @@ function shutdownHTML() {
   );
 }
 
+function kidpixHTML() {
+  return (
+    `<div class="kidpix">` +
+    `<img class="kidpix__img" src="/kid-pix.png" alt="Kid Pix artwork — what tool can create this?">` +
+    `<p class="kidpix__cap">Wanna make some totally rad art?</p>` +
+    `<a class="weblink" href="https://www.myabandonware.com/game/kid-pix-g52/play-p53" target="_blank" rel="noopener noreferrer">» Play KID PIX online «</a>` +
+    `</div>`
+  );
+}
+
 // ---- openers ---------------------------------------------------------------
 function openApp(app) {
   if (app === "computer") openWindow("computer", "🖥️ My Computer", computerHTML(), 320);
@@ -584,6 +594,8 @@ function openApp(app) {
     openWindow("mines", "💣 Minesweeper", `<div class="mines"></div>`, 380, (win) => {
       initMinesweeper(win.querySelector(".mines"));
     });
+  else if (app === "kidpix")
+    openWindow("kidpix", "🎨 KID PIX", kidpixHTML(), 360);
   else if (app === "dnd")
     openWindow("dnd", "🐉 DND Creator", dndHTML(), 340, wireDnd);
 }
@@ -602,6 +614,7 @@ function runProgram(raw) {
     netscape: "internet", www: "internet", web: "internet",
     "my computer": "computer", computer: "computer",
     "recycle bin": "recycle", recycle: "recycle",
+    "kid pix": "kidpix", kidpix: "kidpix", kidpix2: "kidpix", paint: "kidpix",
   };
   if (apps[v]) { openApp(apps[v]); return true; }
 
