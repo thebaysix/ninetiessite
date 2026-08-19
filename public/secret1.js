@@ -86,24 +86,43 @@ setInterval(() => {
 
 // ---- the gate --------------------------------------------------------------
 function check() {
-  if (solved) return;
-  if (pw.value.trim().toLowerCase() !== NEXT_PASSWORD) return;
+  const entered = pw.value.trim().toLowerCase();
+  if (!entered) return;
+  if (entered !== NEXT_PASSWORD) {
+    // Incorrect: shake the box and show denial.
+    pw.classList.remove("wrong");
+    void pw.offsetWidth; // restart the shake animation if already applied
+    pw.classList.add("wrong");
+    msg.textContent = "✗ ACCESS DENIED — try again";
+    msg.classList.add("bad");
+    return;
+  }
   if (broken) {
     msg.textContent = "TOO LATE — Y2K HAS CONSUMED THE MAINFRAME";
     msg.classList.add("bad");
     return;
   }
-  // Beat the clock: freeze the countdown and celebrate.
+  // Correct: freeze the countdown and (re)show the prize — every time.
   solved = true;
-  pw.blur();
+  pw.classList.remove("wrong");
   msg.textContent = "";
+  msg.classList.remove("bad");
+  pw.blur();
   showPrizeBanner();
 }
 
-pw.addEventListener("input", check);
+// Only Submit (button or Enter) checks the password. Typing just clears any
+// prior error feedback — it no longer auto-submits on every keystroke.
 form.addEventListener("submit", (e) => {
   e.preventDefault();
   check();
+});
+pw.addEventListener("input", () => {
+  pw.classList.remove("wrong");
+  if (msg.classList.contains("bad")) {
+    msg.textContent = "";
+    msg.classList.remove("bad");
+  }
 });
 
 // ---- hidden "Go To Midnight" test shortcut ---------------------------------
@@ -639,7 +658,8 @@ function openGuestbook() {
 
 // ---- "you saved the millennium" prize banner (on correct password) ---------
 function showPrizeBanner() {
-  if (document.getElementById("prizeBanner")) return;
+  const existing = document.getElementById("prizeBanner");
+  if (existing) existing.remove(); // re-show fresh every time
   const el = document.createElement("div");
   el.id = "prizeBanner";
   el.className = "prize";
