@@ -156,7 +156,7 @@ function startAvertedBlink() {
     on = !on;
     clockTime.textContent = on ? frozenTime : "Y2K AVERTED";
     clockDate.textContent = on ? frozenDate : "— SAFE —";
-  }, 700);
+  }, 1600);
 }
 
 // Only Submit (button or Enter) checks the password. Typing just clears any
