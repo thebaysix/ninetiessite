@@ -307,13 +307,122 @@ function shopPageHTML() {
     `</div></div>`
   );
 }
-function doomHTML() {
+// ---- D&D Character Creator -------------------------------------------------
+const DND_RACES = ["Human", "Elf", "Dwarf", "Halfling", "Half-Orc", "Gnome", "Half-Elf", "Tiefling", "Dragonborn"];
+const DND_CLASSES = [
+  { n: "Fighter", d: 10, e: "⚔️" }, { n: "Wizard", d: 6, e: "🧙" },
+  { n: "Rogue", d: 8, e: "🗡️" }, { n: "Cleric", d: 8, e: "✨" },
+  { n: "Ranger", d: 10, e: "🏹" }, { n: "Bard", d: 8, e: "🎵" },
+  { n: "Barbarian", d: 12, e: "🪓" }, { n: "Paladin", d: 10, e: "🛡️" },
+  { n: "Druid", d: 8, e: "🍃" }, { n: "Sorcerer", d: 6, e: "🔥" },
+  { n: "Monk", d: 8, e: "👊" }, { n: "Warlock", d: 8, e: "😈" },
+];
+const DND_ALIGN = [
+  "Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral",
+  "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil",
+];
+const DND_ABILS = ["STR", "DEX", "CON", "INT", "WIS", "CHA"];
+const DND_NAMES = [
+  "Aldric", "Bryndhild", "Cormac", "Drizzt", "Elowen", "Fendrel", "Gorak", "Halia",
+  "Ithil", "Jorund", "Kaelthas", "Lyra", "Morgaine", "Nyx", "Oswin", "Perrin",
+  "Ragnar", "Seraphina", "Thorne", "Ulric", "Vesper", "Wynne", "Xanthe", "Zephyra",
+];
+const DND_TITLES = [
+  "the Bold", "the Wise", "Dragonslayer", "of the Ashen Vale", "the Unlucky",
+  "Stormborn", "the Cursed", "Lightbringer", "the Sly", "Ironfoot",
+];
+const DND_QUIPS = [
+  "Rolled a natural 1 on Charisma.", "Definitely not overpowered.",
+  "Has never actually read the rulebook.", "Min-maxed to perfection.",
+  "Will die in the first encounter.", "Powered by Mountain Dew and Cheetos.",
+  "+3 to vibes.", "Chaotic, mostly.", "The DM already hates this one.",
+];
+
+function dndHTML() {
+  const opts = (arr) => arr.map((v) => `<option>${v}</option>`).join("");
+  const classOpts = DND_CLASSES.map((c) => `<option>${c.n}</option>`).join("");
+  const abils = DND_ABILS
+    .map((ab) => `<div class="abil" data-ab="${ab}"><span class="abil__name">${ab}</span>` +
+      `<span class="abil__score">—</span><span class="abil__mod"></span></div>`)
+    .join("");
   return (
-    `<div class="doom"><p class="doom__logo">DOOM</p><p>E1M1: HANGAR</p>` +
-    `<p class="doom__hud">AMMO 50 · HEALTH 100% · ARMOR 0%</p>` +
-    `<button class="w95btn" id="doomplay" type="button">GET PSYCHED!</button>` +
-    `<p id="doommsg" class="doom__msg"></p></div>`
+    `<div class="dnd">` +
+    `<div class="dnd__hd">🐉 A.D.&amp;D. CHARACTER CREATOR v1.0</div>` +
+    `<div class="dnd__row"><label>Name</label>` +
+    `<input class="dnd__name" maxlength="28" spellcheck="false" placeholder="(unnamed hero)">` +
+    `<button class="w95btn dnd__rndname" type="button" title="Random name">🎲</button></div>` +
+    `<div class="dnd__row"><label>Race</label><select class="dnd__race">${opts(DND_RACES)}</select></div>` +
+    `<div class="dnd__row"><label>Class</label><select class="dnd__class">${classOpts}</select></div>` +
+    `<div class="dnd__row"><label>Align</label><select class="dnd__align">${opts(DND_ALIGN)}</select></div>` +
+    `<div class="dnd__portrait"><span class="dnd__emoji">⚔️</span><span class="dnd__hp">HP <b>—</b></span></div>` +
+    `<div class="dnd__abils">${abils}</div>` +
+    `<div class="dnd__ctrls">` +
+    `<button class="w95btn dnd__roll" type="button">⚄ ROLL ABILITY SCORES</button>` +
+    `<button class="w95btn dnd__rndall" type="button">RANDOMIZE ALL</button></div>` +
+    `<p class="dnd__flavor"></p></div>`
   );
+}
+
+function wireDnd(win) {
+  const root = win.querySelector(".dnd");
+  const nameEl = root.querySelector(".dnd__name");
+  const raceEl = root.querySelector(".dnd__race");
+  const classEl = root.querySelector(".dnd__class");
+  const alignEl = root.querySelector(".dnd__align");
+  const emojiEl = root.querySelector(".dnd__emoji");
+  const hpEl = root.querySelector(".dnd__hp b");
+  const flavorEl = root.querySelector(".dnd__flavor");
+  const scores = {}; // ability -> score
+
+  const pick = (a) => a[(Math.random() * a.length) | 0];
+  const d6 = () => 1 + ((Math.random() * 6) | 0);
+  const mod = (s) => Math.floor((s - 10) / 2);
+  const modStr = (m) => (m >= 0 ? "+" + m : "" + m);
+  const classInfo = () => DND_CLASSES.find((c) => c.n === classEl.value) || DND_CLASSES[0];
+
+  function updatePortrait() {
+    const ci = classInfo();
+    emojiEl.textContent = broken ? "💀" : ci.e;
+    hpEl.textContent = scores.CON != null ? Math.max(1, ci.d + mod(scores.CON)) : "—";
+  }
+
+  function setFlavor() {
+    const nm = nameEl.value.trim() || "This nameless wanderer";
+    flavorEl.textContent =
+      `${nm} — ${alignEl.value} ${raceEl.value} ${classEl.value}. ` +
+      (broken ? "The character sheet bursts into flames." : pick(DND_QUIPS));
+  }
+
+  function rollAbilities() {
+    DND_ABILS.forEach((ab) => {
+      const r = [d6(), d6(), d6(), d6()].sort((a, b) => a - b);
+      const score = r[1] + r[2] + r[3]; // 4d6, drop the lowest
+      scores[ab] = score;
+      const cell = root.querySelector('.abil[data-ab="' + ab + '"]');
+      cell.querySelector(".abil__score").textContent = score;
+      cell.querySelector(".abil__mod").textContent = modStr(mod(score));
+    });
+    updatePortrait();
+    setFlavor();
+  }
+
+  root.querySelector(".dnd__roll").addEventListener("click", rollAbilities);
+  root.querySelector(".dnd__rndname").addEventListener("click", () => {
+    nameEl.value = pick(DND_NAMES) + " " + pick(DND_TITLES);
+    setFlavor();
+  });
+  root.querySelector(".dnd__rndall").addEventListener("click", () => {
+    nameEl.value = pick(DND_NAMES) + " " + pick(DND_TITLES);
+    raceEl.value = pick(DND_RACES);
+    classEl.selectedIndex = (Math.random() * DND_CLASSES.length) | 0;
+    alignEl.value = pick(DND_ALIGN);
+    rollAbilities();
+  });
+  classEl.addEventListener("change", () => { updatePortrait(); setFlavor(); });
+  raceEl.addEventListener("change", setFlavor);
+  alignEl.addEventListener("change", setFlavor);
+
+  updatePortrait();
 }
 function documentsHTML() {
   return (
@@ -401,14 +510,8 @@ function openApp(app) {
     openWindow("mines", "💣 Minesweeper", `<div class="mines"></div>`, 380, (win) => {
       initMinesweeper(win.querySelector(".mines"));
     });
-  else if (app === "doom")
-    openWindow("doom", "👹 DOOM.EXE", doomHTML(), 300, (win) => {
-      win.querySelector("#doomplay").addEventListener("click", () => {
-        win.querySelector("#doommsg").textContent = broken
-          ? "THE DEMONS ESCAPED INTO 1900!"
-          : "RIP AND TEAR!";
-      });
-    });
+  else if (app === "dnd")
+    openWindow("dnd", "🐉 D&D Creator", dndHTML(), 340, wireDnd);
 }
 
 function openRunDialog() {
@@ -542,7 +645,7 @@ function closeStart() {
 
 function runStartCmd(cmd) {
   switch (cmd) {
-    case "doom": openApp("doom"); break;
+    case "dnd": openApp("dnd"); break;
     case "documents": openWindow("documents", "📄 My Documents", documentsHTML(), 300); break;
     case "settings": openWindow("settings", "⚙️ Control Panel", settingsHTML(), 320); break;
     case "find": openWindow("find", "🔍 Find: All Files", findHTML(), 320); break;
@@ -560,7 +663,7 @@ startBtn.addEventListener("click", (e) => {
   startMenu.innerHTML =
     `<div class="startmenu__side">Windows&nbsp;98</div>` +
     `<div class="startmenu__items">` +
-    `<button class="startmenu__item" type="button" data-cmd="doom">📁&nbsp; Programs</button>` +
+    `<button class="startmenu__item" type="button" data-cmd="dnd">📁&nbsp; Programs</button>` +
     `<button class="startmenu__item" type="button" data-cmd="documents">📄&nbsp; Documents</button>` +
     `<button class="startmenu__item" type="button" data-cmd="settings">⚙️&nbsp; Settings</button>` +
     `<button class="startmenu__item" type="button" data-cmd="find">🔍&nbsp; Find</button>` +
