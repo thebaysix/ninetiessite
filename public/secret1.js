@@ -312,7 +312,7 @@ function recycleHTML() {
 }
 // ---- The Internet: an addressable fake Netscape browser --------------------
 const HOME_URL = "http://www.geocities.com/Y2Kbunker/";
-const SHOP_URL = "http://www.y2kbugbusters.com";
+const SHOP_URL = "http://www.y2kbugbusters.com/countthelegs";
 
 function browserChromeHTML() {
   return (
@@ -334,7 +334,8 @@ function pageFor(url) {
   }
   const norm = String(url).toLowerCase().trim()
     .replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
-  if (norm.includes("y2kbugbusters")) return shopPageHTML();
+  if (norm.includes("countthelegs")) return shopPageHTML();
+  if (norm.includes("y2kbugbusters")) return shopLandingHTML();
   if (norm === "" || norm.includes("geocities") || norm.includes("y2kbunker")) return homePageHTML();
   return (
     `<p style="color:#b00000"><b>404 — Page Not Found</b></p>` +
@@ -372,6 +373,16 @@ function shopPageHTML() {
     item("red", "🧴", "MillenniuMist™ Bug Spray", "9.99", 7, "★★★★☆") +
     item("yellow", "🎗️", "StickyByte™ Fly Tape", "4.99", 3, "★★★½☆") +
     `</div></div>`
+  );
+}
+// Storefront shown at the bare domain — the catalog lives one page deeper.
+function shopLandingHTML() {
+  return (
+    `<div class="ebay"><div class="ebay__head">🛒 Y2K BugBusters — Millennium Bug Superstore</div>` +
+    `<p><b>Welcome, valued customer!</b></p>` +
+    `<p class="small">Our anti-bug catalog lives one page deeper.</p>` +
+    `<p><a class="weblink" data-go="${SHOP_URL}">» Enter the catalog «</a></p>` +
+    `<p class="small">(hint: to find a bug, you must count the legs)</p></div>`
   );
 }
 // ---- D&D Character Creator -------------------------------------------------
@@ -539,10 +550,19 @@ function shutdownHTML() {
 
 function kidpixHTML() {
   return (
-    `<div class="kidpix">` +
-    `<img class="kidpix__img" src="/kid-pix.png" alt="Kid Pix artwork — what tool can create this?">` +
-    `<p class="kidpix__cap">Wanna make some totally rad art?</p>` +
-    `<a class="weblink" href="https://www.myabandonware.com/game/kid-pix-g52/play-p53" target="_blank" rel="noopener noreferrer">» Play KID PIX online «</a>` +
+    `<div class="imgpopup">` +
+    `<img class="imgpopup__img" src="/kid-pix.png" alt="Kid Pix artwork — what tool can create this?">` +
+    `<p class="imgpopup__cap">Wanna make some totally rad art?</p>` +
+    `<a class="weblink" href="https://www.myabandonware.com/game/kid-pix-g52/play-p53" target="_blank" rel="noopener noreferrer">» Play KID PIX «</a>` +
+    `</div>`
+  );
+}
+function pajamaSamHTML() {
+  return (
+    `<div class="imgpopup">` +
+    `<img class="imgpopup__img" src="/pajama-sam-icon.jpg" alt="Pajama Sam">` +
+    `<p class="imgpopup__cap">Pajama Sam: No Need to Hide When It's Dark Outside</p>` +
+    `<a class="weblink" href="https://www.youtube.com/watch?v=KNkHzO48loo" target="_blank" rel="noopener noreferrer">» OPEN HERE «</a>` +
     `</div>`
   );
 }
@@ -592,6 +612,8 @@ function openApp(app) {
     });
   else if (app === "kidpix")
     openWindow("kidpix", "🎨 KID PIX", kidpixHTML(), 360);
+  else if (app === "pajamasam")
+    openWindow("pajamasam", "🦸 PAJAMA SAM", pajamaSamHTML(), 320);
   else if (app === "dnd")
     openWindow("dnd", "🐉 DND Creator", dndHTML(), 340, wireDnd);
 }
@@ -611,6 +633,7 @@ function runProgram(raw) {
     "my computer": "computer", computer: "computer",
     "recycle bin": "recycle", recycle: "recycle",
     "kid pix": "kidpix", kidpix: "kidpix", kidpix2: "kidpix", paint: "kidpix",
+    "pajama sam": "pajamasam", pajamasam: "pajamasam", "pajama-sam": "pajamasam", sam: "pajamasam",
   };
   if (apps[v]) { openApp(apps[v]); return true; }
 
