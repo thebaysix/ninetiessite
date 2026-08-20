@@ -173,6 +173,11 @@ pw.addEventListener("input", () => {
   }
 });
 
+// (?) password hint
+document.getElementById("pwHint").addEventListener("click", () => {
+  errorBox("Hint", "Three games from the 90s… we'll give you the information you need.", "💡");
+});
+
 // ---- hidden "Go To Midnight" test shortcut ---------------------------------
 function goMidnight() {
   if (solved || broken) return;
